@@ -1,0 +1,41 @@
+# Sırlar — asla commit edilmez
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.pem
+*.key
+id_rsa*
+
+# Konteyner kalıcı verileri
+data/
+
+# Veri seti — kamuya yüklenmez (kişisel veri/KVKK + tescilli bilgi tabanı)
+offline_data/
+db/staff_seed.sql
+*.sqlite
+*.sqlite3
+
+# Yerel Qdrant storage kopyası (iCloud deadlock workaround)
+/qdrant_storage/
+
+# Python (Faz 2+)
+__pycache__/
+*.pyc
+.venv/
+
+# Yerel önbellek (Faz 9 — DiskCache)
+local_cache/
+
+# Telemetri veritabanı (Faz 15)
+gaunai_telemetry.db
+
+# Yerel servis logları
+logs/
+.gstack/
+
+# macOS
+.DS_Store
+
+# yerel-only mount override (iCloud deadlock workaround)
+docker-compose.override.yml

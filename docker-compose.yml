@@ -1,0 +1,78 @@
+# GAUN Chatbot — Faz 1 altyapı katmanı (MariaDB + Qdrant)
+# Güvenlik modeli: hiçbir servis host'a port AÇMAZ; erişim yalnız
+# gaun_network içindeki konteynerlerden. Sırlar .env'den gelir.
+
+name: gaunchatbot
+
+services:
+  mariadb:
+    image: mariadb:11.4          # LTS sürüm
+    container_name: gaun_mariadb
+    restart: unless-stopped
+    mem_limit: ${MARIADB_MEM_LIMIT:-1g}
+    environment:
+      TZ: ${TZ:-Europe/Istanbul}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?.env dosyasinda tanimlanmali}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-gaun_assistant}
+      MARIADB_USER: ${MARIADB_USER:-gaun_app}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?.env dosyasinda tanimlanmali}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_turkish_ci
+      - --innodb-buffer-pool-size=512M   # mem_limit'in (1g) yarısı; kalan yarı bağlantı/tampon alanı
+    # DEV/PILOT: yalnız 127.0.0.1'e bind — host'taki venv (bot.py, crawler)
+    # erişebilsin. LAN'a/dışarıya AÇILMAZ. Prod'da bu satır kaldırılıp app
+    # tier gaun_network İÇİNDEN çalışır (bkz. docs/faz1 güvenlik notu).
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+      # Yalnız İLK açılışta (boş data dizini) sırayla çalışır; sonraki
+      # migration'lar runbook'taki komutla elle uygulanır.
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - gaun_network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.1  # kurulum günü Docker Hub'dan güncel stabil sürümü kontrol edip yükselt
+    container_name: gaun_qdrant
+    restart: unless-stopped
+    mem_limit: ${QDRANT_MEM_LIMIT:-2g}
+    environment:
+      TZ: ${TZ:-Europe/Istanbul}
+      # API anahtarı ağ içinde bile zorunlu: ileride eklenecek her konteyner
+      # otomatik güven kazanmasın (derinlemesine savunma).
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:?.env dosyasinda tanimlanmali}
+      # Sıfır dış veri sızıntısı ilkesi: Qdrant'ın anonim telemetrisi kapalı.
+      QDRANT__TELEMETRY_DISABLED: "true"
+    # DEV/PILOT: yalnız 127.0.0.1 (host venv erişimi). LAN'a kapalı; API key
+    # zaten zorunlu. Prod'da kaldırılır, app tier ağ içinden erişir.
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - gaun_network
+    healthcheck:
+      # Qdrant imajında curl/wget yok; bash TCP soketiyle canlılık kontrolü.
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  gaun_network:
+    # Sabit isim: compose proje öneki eklenmesin, test/ek konteynerler
+    # '--network gaun_network' ile doğrudan katılabilsin.
+    name: gaun_network
+    driver: bridge
+    # NOT: 'internal: true' YAPILMADI — bu ağa Faz 2'de katılacak crawler'ın
+    # üniversite sitelerine çıkışı gerekiyor. İçeri giriş zaten kapalı
+    # (hiçbir serviste 'ports:' tanımı yok).

@@ -1,0 +1,7 @@
+# Geliştirme/test/tooling bağımlılıkları
+-r requirements.txt
+pytest>=8
+ruff>=0.6
+# JS-render crawler (playwright_crawler.py). API runtime'ında GEREKMEZ.
+# Kurulum sonrası: playwright install --with-deps chromium
+playwright>=1.40

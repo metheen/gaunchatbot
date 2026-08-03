@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GaunAI Asistan</title>
+
+  <!-- Tailwind (Play CDN). NOT: tamamen çevrimdışı/üretim için Tailwind yerel
+       derlenip vendor edilmeli; kampüs-içi araç bu CDN'e sayfa yüklenirken
+       erişim gerektirir. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy:    { DEFAULT: '#112d5c', 700: '#0d234a', 800: '#081832' },
+            crimson: { DEFAULT: '#c62828', 700: '#a31f1f' },
+          },
+          boxShadow: {
+            widget: '0 24px 50px -12px rgba(17, 45, 92, 0.45)',
+            fab:    '0 10px 25px -5px rgba(17, 45, 92, 0.5)',
+          },
+          keyframes: {
+            'pop-in':  { '0%': { opacity: 0, transform: 'translateY(16px) scale(.96)' },
+                         '100%': { opacity: 1, transform: 'translateY(0) scale(1)' } },
+            'blink':   { '0%,80%,100%': { opacity: .2 }, '40%': { opacity: 1 } },
+          },
+          animation: {
+            'pop-in': 'pop-in .18s ease-out',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* İnce kaydırma çubuğu — kurumsal, sade */
+    #ga-messages::-webkit-scrollbar { width: 6px; }
+    #ga-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+    #ga-messages { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    /* Bot cevabı markdown biçimlendirmesi (Tailwind preflight list-style'ı sıfırlar,
+       o yüzden ol/ul için açıkça geri veriyoruz). */
+    .ga-md { line-height: 1.55; }
+    .ga-md p { margin: 0 0 8px; } .ga-md p:last-child { margin-bottom: 0; }
+    .ga-md ol, .ga-md ul { margin: 4px 0 8px; padding-left: 20px; }
+    .ga-md ol { list-style: decimal; } .ga-md ul { list-style: disc; }
+    .ga-md li { margin: 3px 0; }
+    .ga-md strong { font-weight: 600; color: #0f172a; }
+    .ga-md a { color: #112d5c; text-decoration: underline; word-break: break-word; }
+  </style>
+</head>
+
+<body class="bg-slate-100">
+  <!-- Demo sayfa zemini (widget'ı bağımsız görmek için) -->
+  <main class="min-h-screen flex items-center justify-center text-slate-400 select-none">
+    <p class="text-sm">Gaziantep Üniversitesi kurumsal portalı — GaunAI widget önizlemesi</p>
+  </main>
+
+  <!-- ================= GaunAI Chat Widget ================= -->
+  <div class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
+
+    <!-- Açık pencere -->
+    <section id="ga-panel"
+      class="hidden mb-3 w-[22rem] max-w-[calc(100vw-2.5rem)] h-[32rem] max-h-[calc(100vh-6rem)]
+             flex flex-col overflow-hidden rounded-2xl bg-white shadow-widget
+             ring-1 ring-black/5 animate-pop-in"
+      role="dialog" aria-label="GaunAI Asistan sohbet penceresi">
+
+      <!-- Başlık -->
+      <header class="flex items-center gap-3 bg-navy px-4 py-3 text-white">
+        <span class="grid h-9 w-9 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
+          <!-- akademik rozet ikonu -->
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M12 3 1 8l11 5 9-4.09V15h2V8L12 3zM5 13.18v3.5L12 20l7-3.32v-3.5L12 16l-7-2.82z"/>
+          </svg>
+        </span>
+        <div class="min-w-0 flex-1">
+          <h1 class="truncate text-sm font-semibold leading-tight">GaunAI Asistan</h1>
+          <p class="flex items-center gap-1.5 text-[11px] text-white/70">
+            <span class="inline-block h-2 w-2 rounded-full bg-emerald-400"></span> Çevrimiçi
+          </p>
+        </div>
+        <button id="ga-close" aria-label="Sohbeti kapat"
+          class="grid h-8 w-8 place-items-center rounded-full text-white/80
+                 transition hover:bg-white/15 hover:text-white">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </header>
+
+      <!-- Mesaj alanı -->
+      <div id="ga-messages" class="flex-1 space-y-3 overflow-y-auto bg-[#f9fafb] px-4 py-4">
+        <!-- Karşılama (bot) mesajı JS ile eklenir -->
+      </div>
+
+      <!-- Giriş alanı -->
+      <form id="ga-form" class="flex items-end gap-2 border-t border-slate-200 bg-white px-3 py-3">
+        <input id="ga-input" type="text" autocomplete="off"
+          placeholder="Sorunuzu yazın..."
+          class="min-w-0 flex-1 rounded-full border border-slate-300 bg-slate-50 px-4 py-2.5
+                 text-sm text-slate-800 placeholder:text-slate-400
+                 focus:border-navy focus:bg-white focus:outline-none focus:ring-2 focus:ring-navy/20" />
+        <button type="submit" aria-label="Gönder"
+          class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-navy text-white
+                 transition hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-navy/40
+                 disabled:opacity-50" id="ga-send">
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M3.4 20.4 21 12 3.4 3.6 3 10l12 2-12 2 .4 6.4z"/>
+          </svg>
+        </button>
+      </form>
+    </section>
+
+    <!-- Kapalı durum: Floating Action Button -->
+    <button id="ga-fab" aria-label="GaunAI Asistan'ı aç"
+      class="relative grid h-14 w-14 place-items-center rounded-full bg-navy text-white
+             shadow-fab ring-1 ring-white/10 transition hover:bg-navy-700 hover:scale-105
+             focus:outline-none focus:ring-4 focus:ring-navy/30">
+      <!-- sohbet ikonu -->
+      <svg id="ga-fab-chat" viewBox="0 0 24 24" class="h-7 w-7" fill="currentColor" aria-hidden="true">
+        <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-5 4V6a2 2 0 0 1 1-2z"/>
+      </svg>
+      <!-- bildirim noktası (crimson) -->
+      <span id="ga-badge"
+        class="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-crimson ring-2 ring-white"></span>
+    </button>
+  </div>
+
+  <script>
+    (function () {
+      const API_URL = "/api/chat"; // aynı origin (FastAPI 8000). CORS açık.
+
+      const panel    = document.getElementById("ga-panel");
+      const fab       = document.getElementById("ga-fab");
+      const badge     = document.getElementById("ga-badge");
+      const closeBtn  = document.getElementById("ga-close");
+      const form      = document.getElementById("ga-form");
+      const input     = document.getElementById("ga-input");
+      const sendBtn   = document.getElementById("ga-send");
+      const messages  = document.getElementById("ga-messages");
+
+      let greeted = false;
+      // Sohbet hafızası: son 2 soru + 2 cevap (4 mesaj) sliding window.
+      // Backend takip sorularını bu geçmişe göre bağımsız hale getirir.
+      const chatHistory = [];
+      const HISTORY_MAX = 4;
+
+      const scrollDown = () => { messages.scrollTop = messages.scrollHeight; };
+      const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => (
+        { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+      // Satır içi markdown: **kalın**, [metin](url), çıplak URL → güvenli <a>.
+      // Escape sonrası link/kalın syntax'ı token'la yerine konur, en sona
+      // gerçek <a>/<strong>'a çevrilir (iç içe link / çift işleme olmasın).
+      const mdInline = (raw) => {
+        let s = escapeHtml(raw); const links = [];
+        const stash = (html) => { links.push(html); return `@@GAUNLINK${links.length - 1}@@`; };
+        s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, t, u) =>
+          stash(`<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`));
+        s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        s = s.replace(/(https?:\/\/[^\s<]+)/g, (u) =>
+          stash(`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`));
+        return s.replace(/@@GAUNLINK(\d+)@@/g, (_, i) => links[Number(i)]);
+      };
+
+      // Gövde → paragraf/liste: boş satır = paragraf ayracı; ardışık "1."/"-"
+      // satırları <ol>/<ul>; diğerleri <p> (içteki tek satır sonları <br>).
+      const renderBody = (bodyText) => {
+        const lines = bodyText.split(/\r?\n/), out = [];
+        let para = [], list = null, ltype = null;
+        const flushP = () => { if (para.length) { out.push(`<p>${para.map(mdInline).join("<br>")}</p>`); para = []; } };
+        const flushL = () => { if (list) { out.push(`<${ltype}>${list.join("")}</${ltype}>`); list = null; ltype = null; } };
+        for (const line of lines) {
+          if (!line.trim()) { flushP(); flushL(); continue; }
+          const ol = line.match(/^\s*\d+[.\)]\s+(.*)$/), ul = line.match(/^\s*[-*•]\s+(.*)$/);
+          if (ol) { flushP(); if (ltype && ltype !== "ol") flushL(); ltype = "ol"; list = list || []; list.push(`<li>${mdInline(ol[1])}</li>`); }
+          else if (ul) { flushP(); if (ltype && ltype !== "ul") flushL(); ltype = "ul"; list = list || []; list.push(`<li>${mdInline(ul[1])}</li>`); }
+          else { flushL(); para.push(line); }
+        }
+        flushP(); flushL();
+        return out.join("");
+      };
+
+      // Bot metnini paragraf/liste/link olarak biçimlendirir; "🔗 Kaynak:"
+      // satırlarını ayrı tıklanabilir kaynak linkine çevirir.
+      function renderBotHtml(text) {
+        const lines = text.split(/\r?\n/);
+        const body = [], sources = [];
+        for (const line of lines) {
+          const m = line.match(/^\s*🔗?\s*Kaynak\s*:\s*(.+)$/i);
+          if (m) {
+            const urls = m[1].match(/https?:\/\/[^\s\]\)]+/g) || [];
+            urls.forEach((u) => sources.push(u));
+          } else { body.push(line); }
+        }
+        let html = `<div class="ga-md">${renderBody(body.join("\n"))}</div>`;
+        if (sources.length) {
+          html += sources.map((u) =>
+            `<a href="${escapeHtml(u)}" target="_blank" rel="noopener noreferrer"
+                class="mt-2 flex items-center gap-1 text-xs font-medium text-navy
+                       underline decoration-slate-300 underline-offset-2
+                       transition hover:text-crimson-700 hover:decoration-crimson break-all">
+               🔗 Kaynak: ${escapeHtml(u)}
+             </a>`).join("");
+        }
+        return html;
+      }
+
+      function addUser(text) {
+        const el = document.createElement("div");
+        el.className = "flex justify-end";
+        el.innerHTML =
+          `<div class="max-w-[80%] rounded-2xl rounded-br-md bg-sky-100 px-3.5 py-2
+                       text-sm text-slate-800 shadow-sm">${escapeHtml(text)}</div>`;
+        messages.appendChild(el);
+        scrollDown();
+      }
+
+      function addBot(html, logId) {
+        const el = document.createElement("div");
+        el.className = "flex justify-start";
+        // Geri bildirim çubuğu yalnız gerçek (loglanmış) cevaplarda görünür.
+        const fb = (logId != null)
+          ? `<div class="mt-1.5 flex items-center gap-1.5 text-slate-300">
+               <button type="button" onclick="sendFeedback(${logId}, 1, this)" aria-label="Faydalı"
+                 class="ga-fb rounded-full px-1.5 py-0.5 text-xs leading-none transition
+                        hover:bg-slate-100 hover:text-navy">👍</button>
+               <button type="button" onclick="sendFeedback(${logId}, -1, this)" aria-label="Faydasız"
+                 class="ga-fb rounded-full px-1.5 py-0.5 text-xs leading-none transition
+                        hover:bg-slate-100 hover:text-crimson">👎</button>
+             </div>`
+          : "";
+        el.innerHTML =
+          `<div class="max-w-[85%]">
+             <div class="rounded-2xl rounded-bl-md border border-slate-200 bg-white
+                         px-3.5 py-2 text-sm text-slate-800 shadow-sm">${html}</div>
+             ${fb}
+           </div>`;
+        messages.appendChild(el);
+        scrollDown();
+        return el;
+      }
+
+      // Geri bildirim: butonların inline onclick'inden çağrılır. IIFE içinde
+      // olduğumuz için GLOBAL'e (window) bağlanır; yoksa onclick 'sendFeedback
+      // is not defined' der ve butonlar işlevsiz kalırdı.
+      window.sendFeedback = async function (logId, score, btn) {
+        const bar = btn.parentElement;               // butonların sarmalayıcı div'i
+        if (!bar || bar.dataset.done) return;         // aynı mesaja tekrar oy yok
+        bar.dataset.done = "1";
+        bar.querySelectorAll("button").forEach((b) => {
+          b.disabled = true;
+          b.classList.add("opacity-40", "cursor-default");
+        });
+        // görsel onay: seçilen buton belirginleşir (👍 yeşil, 👎 crimson)
+        btn.classList.remove("opacity-40");
+        btn.classList.add(score === 1 ? "text-emerald-600" : "text-crimson",
+                          "bg-slate-100", "scale-110");
+        try {
+          await fetch("/api/feedback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ log_id: logId, score: score }),
+          });
+        } catch (_) { /* sessiz: geri bildirim kritik değil */ }
+      };
+
+      function addTyping() {
+        const el = document.createElement("div");
+        el.className = "flex justify-start";
+        el.innerHTML =
+          `<div class="rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 shadow-sm">
+             <div class="flex gap-1">
+               <span class="h-2 w-2 rounded-full bg-slate-400" style="animation:blink 1.2s infinite .0s"></span>
+               <span class="h-2 w-2 rounded-full bg-slate-400" style="animation:blink 1.2s infinite .2s"></span>
+               <span class="h-2 w-2 rounded-full bg-slate-400" style="animation:blink 1.2s infinite .4s"></span>
+             </div>
+           </div>`;
+        messages.appendChild(el);
+        scrollDown();
+        return el;
+      }
+
+      function openPanel() {
+        panel.classList.remove("hidden");
+        fab.classList.add("hidden");
+        badge.classList.add("hidden");
+        if (!greeted) {
+          addBot(renderBotHtml(
+            "Merhaba! Ben GaunAI Asistan. Ders kaydı, yatay geçiş, sınav itirazı, " +
+            "personel iletişimi gibi konularda size yardımcı olabilirim. Nasıl yardımcı olabilirim?"));
+          renderFaq();
+          greeted = true;
+        }
+        setTimeout(() => input.focus(), 50);
+      }
+      function closePanel() {
+        panel.classList.add("hidden");
+        fab.classList.remove("hidden");
+      }
+
+      fab.addEventListener("click", openPanel);
+      closeBtn.addEventListener("click", closePanel);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !panel.classList.contains("hidden")) closePanel();
+      });
+
+      // Sıkça Sorulan Sorular — karşılamadan sonra tıklanabilir liste; tıklanınca
+      // soru normal sohbet akışına gider (RAG cevabı + 👍/👎).
+      const FAQ = [
+        "Kayıt dondurma nasıl yapılır?",
+        "Yatay geçiş şartları nelerdir?",
+        "Sınav sonucuma nasıl itiraz ederim?",
+        "İkinci nüsha diploma nasıl alınır?",
+        "Kütüphane nerede?",
+        "Yemekhanede bugün ne var?",
+      ];
+      function renderFaq() {
+        const el = document.createElement("div");
+        el.className = "flex justify-start";
+        const chips = FAQ.map((q) =>
+          `<button type="button" data-q="${escapeHtml(q)}"
+             class="ga-faq-chip w-full text-left rounded-xl border border-slate-200 bg-white
+                    px-3 py-2 text-[13px] leading-snug text-navy transition
+                    hover:border-navy hover:bg-sky-50">${escapeHtml(q)}</button>`).join("");
+        el.innerHTML =
+          `<div class="max-w-[85%] w-full">
+             <p class="mb-1.5 text-xs font-semibold text-slate-500">Sıkça Sorulan Sorular</p>
+             <div class="flex flex-col gap-1.5">${chips}</div>
+           </div>`;
+        el.querySelectorAll(".ga-faq-chip").forEach((b) =>
+          b.addEventListener("click", () => submitQuestion(b.dataset.q)));
+        messages.appendChild(el);
+        scrollDown();
+      }
+
+      async function submitQuestion(raw) {
+        const q = (raw || "").trim();
+        if (!q || input.disabled) return;
+
+        addUser(q);
+        input.value = "";
+        input.disabled = sendBtn.disabled = true;
+        const typing = addTyping();
+
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Güncel soru + ÖNCEKİ turların geçmişi (bu soru hariç) gönderilir.
+            body: JSON.stringify({ question: q, history: chatHistory }),
+          });
+          typing.remove();
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const botText = data.answer ?? "Bilmiyorum.";
+          addBot(renderBotHtml(botText), data.log_id);  // log_id -> 👍/👎
+          // Bu turu hafızaya ekle ve son 4 mesaja kırp (sliding window).
+          chatHistory.push({ role: "user", content: q });
+          chatHistory.push({ role: "assistant", content: botText });
+          while (chatHistory.length > HISTORY_MAX) chatHistory.shift();
+        } catch (err) {
+          typing.remove();
+          addBot(`<span class="text-crimson-700">Bağlantı hatası: sunucuya ulaşılamadı.
+                  (${escapeHtml(String(err.message || err))})</span>`);
+        } finally {
+          input.disabled = sendBtn.disabled = false;
+          input.focus();
+        }
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitQuestion(input.value);
+      });
+    })();
+  </script>
+</body>
+</html>

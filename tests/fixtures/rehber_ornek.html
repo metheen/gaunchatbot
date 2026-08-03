@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="utf-8"><title>Rehber POST cevabı (ÖRNEK FİKSTÜR)</title></head>
+<body>
+<!-- Canlı siteden (rehber.gaziantep.edu.tr) doğrulanan şablonun kesiti:
+     5 tablo, personel tables[3]'te, geçerli satır TAM 5 td,
+     td[1] = <i>Unvan</i> AD, td[4] = <b>ÜST BİRİM</b> <i>ALT BİRİM</i>. -->
+
+<table><tr><td>Üst menü</td><td>(tablo 1)</td></tr></table>
+<table><tr><td>Arama formu</td><td>(tablo 2)</td></tr></table>
+<table><tr><td>Duyuru şeridi</td><td>(tablo 3)</td></tr></table>
+
+<table id="sonuclar">
+  <!-- bozuk başlık satırı: th'li — atlanmalı (sessiz) -->
+  <tr><th>No</th><th>Personel</th><th>İletişim</th></tr>
+  <!-- gerçek siteden birebir markup deseni -->
+  <tr>
+    <td align="left" style="padding:15px"><div class="badge badge-primary" title="1">1</div></td>
+    <td align="left" style="padding:15px"><div class="text-nowrap"><i>Profesör</i> VELİ</div></td>
+    <td align="left" style="padding:15px"><div class="text-nowrap">ÖRNEK</div></td>
+    <td align="left" style="padding:15px"><div class=""><b class="text-red">9001</b></div></td>
+    <td align="left" style="padding:15px"><div class="small"><b>MÜHENDİSLİK FAKÜLTESİ</b> <i>FİZİK MÜHENDİSLİĞİ</i></div></td>
+  </tr>
+  <!-- idari personel: alt birim yok -->
+  <tr>
+    <td><div class="badge" title="1">2</div></td>
+    <td><div class="text-nowrap"><i>Daire Başkanı</i> CANAN</div></td>
+    <td><div class="text-nowrap">DENEME</div></td>
+    <td><div><b class="text-red">1234</b></div></td>
+    <td><div class="small"><b>BİLGİ İŞLEM DAİRE BAŞKANLIĞI</b></div></td>
+  </tr>
+  <!-- savunmacı geri düşüş: td[1]'de <i> yok, td[4]'te <b> yok -->
+  <tr>
+    <td><div>3</div></td>
+    <td><div class="text-nowrap">ZEHRA</div></td>
+    <td><div class="text-nowrap">TEST</div></td>
+    <td><div><b class="text-red">1111</b></div></td>
+    <td><div class="small">GENEL SEKRETERLİK</div></td>
+  </tr>
+  <!-- bozuk satır: 3 td — atlanmalı -->
+  <tr><td>4</td><td><i>Memur</i> EKSİK</td><td>SATIR</td></tr>
+  <!-- adsız satır: 5 td ama ad/soyad boş — atlanmalı -->
+  <tr>
+    <td>5</td><td><i>Şef</i></td><td></td><td><b>2222</b></td><td><b>GENEL SEKRETERLİK</b></td>
+  </tr>
+</table>
+
+<table><tr><td>Alt bilgi</td><td>(tablo 5)</td></tr></table>
+</body>
+</html>

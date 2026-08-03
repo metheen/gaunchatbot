@@ -1,0 +1,35 @@
+[Unit]
+Description=GaunAI - FastAPI RAG Asistani (uvicorn)
+# API; MariaDB+Qdrant (docker) ve Ollama ayakta olduktan sonra baslamali.
+After=network-online.target docker.service ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# ---- SUNUCUYA GORE UYARLA ----
+User=gaunai
+Group=gaunai
+WorkingDirectory=/opt/gaunai
+# .env WorkingDirectory'de durur; bot.py load_dotenv(".env") ile okur.
+# Alternatif (istersen): EnvironmentFile=/opt/gaunai/.env
+ExecStart=/opt/gaunai/.venv/bin/uvicorn api:app --host 127.0.0.1 --port 8000
+# --------------------------------
+
+# Cokerse otomatik yeniden baslat
+Restart=always
+RestartSec=3
+
+# Kapatmada nazik sonlandirma
+KillSignal=SIGINT
+TimeoutStopSec=20
+
+# Guvenlik sikilastirma (opsiyonel ama onerilir)
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Loglar journald'a (journalctl -u gaunai-api)
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

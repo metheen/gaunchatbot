@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.gaunai.local</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/metinmac/Desktop/gaunchatbot/.venv/bin/python</string>
+    <string>-B</string>
+    <string>-m</string>
+    <string>uvicorn</string>
+    <string>api:app</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>8000</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/metinmac/Desktop/gaunchatbot</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONUNBUFFERED</key>
+    <string>1</string>
+    <key>PYTHONDONTWRITEBYTECODE</key>
+    <string>1</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/metinmac/Desktop/gaunchatbot/logs/gaunai-api.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/metinmac/Desktop/gaunchatbot/logs/gaunai-api.err.log</string>
+</dict>
+</plist>
