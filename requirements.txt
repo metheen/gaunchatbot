@@ -1,14 +1,14 @@
 # GAUN Chatbot — çalışma zamanı bağımlılıkları (Faz 2 pilot)
-beautifulsoup4>=4.12
-mysql-connector-python>=8.4
-python-dotenv>=1.0
-requests>=2.32
+beautifulsoup4>=4.12,<5
+mysql-connector-python>=8.4,<10
+python-dotenv>=1.0,<2
+requests>=2.32,<3
 # Sunucu imajıyla (qdrant/qdrant:v1.12.1) hizalı tut: major/minor eşleşmezse
 # istemci uyarı verir ve API değişir (1.18'de .search() kaldırıldı).
 qdrant-client>=1.12,<1.13   # RAG botu (bot.py) — vektör deposu istemcisi
-ollama>=0.3                 # bot.py + embed_data.py — yerel Ollama istemcisi
-PyMuPDF>=1.24               # crawler_mevzuat.py — PDF metin çıkarımı (fitz)
-diskcache>=5.6              # bot.py — statik cevaplar için kalıcı yerel önbellek
-fastapi>=0.110              # api.py — web köprüsü
-uvicorn>=0.27              # api.py — ASGI sunucu
-pydantic>=2                # api.py — istek/yanıt şeması
+ollama>=0.3,<1                 # bot.py + embed_data.py — yerel Ollama istemcisi
+PyMuPDF>=1.24,<2               # crawler_mevzuat.py — PDF metin çıkarımı (fitz)
+diskcache>=5.6,<6              # bot.py — statik cevaplar için kalıcı yerel önbellek
+fastapi>=0.110,<1              # api.py — web köprüsü
+uvicorn>=0.27,<1              # api.py — ASGI sunucu
+pydantic>=2,<3                # api.py — istek/yanıt şeması
